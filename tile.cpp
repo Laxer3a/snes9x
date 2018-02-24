@@ -1117,14 +1117,17 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		int	AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
 		int	CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
 		\
+		AA += BB;\
+		CC += DD;\
+		\
 		uint8	Pix; \
 		\
 		if (!PPU.Mode7Repeat) \
 		{ \
 			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				int	X = ((AA + BB) >> 8) & 0x3ff; \
-				int	Y = ((CC + DD) >> 8) & 0x3ff; \
+				int	X = (AA >> 8) & 0x3ff; \
+				int	Y = (CC >> 8) & 0x3ff; \
 				\
 				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
 				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
@@ -1136,8 +1139,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				int	X = ((AA + BB) >> 8); \
-				int	Y = ((CC + DD) >> 8); \
+				int	X = (AA >> 8); \
+				int	Y = (CC >> 8); \
 				\
 				uint8	b; \
 				\
@@ -1236,6 +1239,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		int	AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
 		int	CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
 		\
+		AA += BB;\
+		CC += DD;\
+		\
 		uint8	Pix; \
 		uint8	ctr = 1; \
 		\
@@ -1247,8 +1253,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					continue; \
 				ctr = HMosaic; \
 				\
-				int	X = ((AA + BB) >> 8) & 0x3ff; \
-				int	Y = ((CC + DD) >> 8) & 0x3ff; \
+				int	X = (AA >> 8) & 0x3ff; \
+				int	Y = (CC >> 8) & 0x3ff; \
 				\
 				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
 				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
@@ -1271,8 +1277,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					continue; \
 				ctr = HMosaic; \
 				\
-				int	X = ((AA + BB) >> 8); \
-				int	Y = ((CC + DD) >> 8); \
+				int	X = (AA >> 8); \
+				int	Y = (CC >> 8); \
 				\
 				uint8	b; \
 				\
