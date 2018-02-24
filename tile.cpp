@@ -1124,38 +1124,94 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		\
 		if (!PPU.Mode7Repeat) \
 		{ \
-			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
-			{ \
-				int	X = AA >> 7; \
+			if (cc) {\
+				for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
+				{ \
+					int	X = AA >> 7; \
+					int	Y = CC >> 4; \
+					\
+					uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & 0x3f80) << 1) + ((X >> 3) & 0xfe)] << 7); \
+					uint8	b = *(TileData + (Y & 0x70) + (X & 14)); \
+					\
+					DRAW_PIXEL(x, Pix = (b & MASK)); \
+				} \
+			} else { \
 				int	Y = CC >> 4; \
-				\
-				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & 0x3f80) << 1) + ((X >> 3) & 0xfe)] << 7); \
-				uint8	b = *(TileData + (Y & 0x70) + (X & 14)); \
-				\
-				DRAW_PIXEL(x, Pix = (b & MASK)); \
+				register uint8* AdrY;\
+				register int AdrY2;\
+				AdrY = &(Memory.VRAM[((Y & 0x3f80) << 1)]); AdrY2 = (Y & 0x70);\
+				for (uint32 x = Left; x < Right; x++, AA += aa) \
+				{ \
+					int	X = AA >> 7; \
+					\
+					uint8	*TileData = VRAM1 + (AdrY[(X >> 3) & 0xfe] << 7);\
+					uint8	b = *(TileData + AdrY2 + (X & 14)); \
+					\
+					DRAW_PIXEL(x, Pix = (b & MASK)); \
+				} \
 			} \
 		} \
 		else \
 		{ \
-			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
-			{ \
-				int	X = (AA >> 8); \
-				int	Y = (CC >> 8); \
-				\
-				uint8	b; \
-				\
-				if (((X | Y) & ~0x3ff) == 0) \
+			if (cc) { \
+				for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
 				{ \
-					uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					int	X = (AA >> 8); \
+					int	Y = (CC >> 8); \
+					\
+					uint8	b; \
+					\
+					if (((X | Y) & ~0x3ff) == 0) \
+					{ \
+						uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+						b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					} \
+					else \
+					if (PPU.Mode7Repeat == 3) \
+						b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					else \
+						continue; \
+					\
+					DRAW_PIXEL(x, Pix = (b & MASK)); \
 				} \
-				else \
-				if (PPU.Mode7Repeat == 3) \
-					b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
-				else \
-					continue; \
-				\
-				DRAW_PIXEL(x, Pix = (b & MASK)); \
+			} else { \
+				int	Y = (CC >> 8); \
+				register uint8* AdrY; \
+				register int AdrY2; \
+				AdrY = &(Memory.VRAM[((Y & ~7) << 5)]); AdrY2 = ((Y & 7) << 4);\
+				if ((Y & ~0x3ff) == 0) { \
+					for (uint32 x = Left; x < Right; x++, AA += aa) \
+					{ \
+						int	X = (AA >> 8); \
+						\
+						uint8	b; \
+						\
+						if ((X & ~0x3ff) == 0) \
+						{ \
+							uint8	*TileData = VRAM1 + (AdrY[(X >> 2) & ~1] << 7); \
+							b = *(TileData + AdrY2 + ((X & 7) << 1)); \
+						} \
+						else \
+						if (PPU.Mode7Repeat == 3) \
+							b = *(VRAM1    + AdrY2 + ((X & 7) << 1)); \
+						else \
+							continue; \
+						\
+						DRAW_PIXEL(x, Pix = (b & MASK)); \
+					} \
+				} else { \
+					for (uint32 x = Left; x < Right; x++, AA += aa) \
+					{ \
+						int	X = (AA >> 8); \
+						uint8	b; \
+						if (PPU.Mode7Repeat == 3) \
+							b = *(VRAM1    + AdrY2 + ((X & 7) << 1)); \
+						else \
+							continue; \
+						\
+						DRAW_PIXEL(x, Pix = (b & MASK)); \
+					} \
+				} \
 			} \
 		} \
 	}
