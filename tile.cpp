@@ -1126,11 +1126,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				int	X = (AA >> 8) & 0x3ff; \
-				int	Y = (CC >> 8) & 0x3ff; \
+				int	X = AA >> 7; \
+				int	Y = CC >> 4; \
 				\
-				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & 0x3f80) << 1) + ((X >> 3) & 0xfe)] << 7); \
+				uint8	b = *(TileData + (Y & 0x70) + (X & 14)); \
 				\
 				DRAW_PIXEL(x, Pix = (b & MASK)); \
 			} \
@@ -1253,11 +1253,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					continue; \
 				ctr = HMosaic; \
 				\
-				int	X = (AA >> 8) & 0x3ff; \
-				int	Y = (CC >> 8) & 0x3ff; \
+				int	X = AA >> 7; \
+				int	Y = CC >> 4; \
 				\
-				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & 0x3f80) << 1) + ((X >> 3) & 0xfe)] << 7); \
+				uint8	b = *(TileData + (Y & 0x70) + (X & 14)); \
 				\
 				if ((Pix = (b & MASK))) \
 				{ \
