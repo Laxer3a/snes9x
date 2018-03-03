@@ -448,6 +448,7 @@
     <ClCompile Include="..\dsp2.cpp" />
     <ClCompile Include="..\dsp3.cpp" />
     <ClCompile Include="..\dsp4.cpp" />
+    <ClCompile Include="..\execFlow.cpp" />
     <ClCompile Include="..\filter\2xsai.cpp" />
     <ClCompile Include="..\filter\blit.cpp" />
     <ClCompile Include="..\filter\epx.cpp" />
@@ -483,6 +484,7 @@
     <ClCompile Include="..\netplay.cpp" />
     <ClCompile Include="..\obc1.cpp" />
     <ClCompile Include="..\ppu.cpp" />
+    <ClCompile Include="..\Remotery.c" />
     <ClCompile Include="..\sa1.cpp" />
     <ClCompile Include="..\sa1cpu.cpp" />
     <ClCompile Include="..\screenshot.cpp" />

@@ -189,7 +189,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+#include "execFlow.h"
 #include "snes9x.h"
 #include "memmap.h"
 #include "apu/apu.h"
@@ -1591,12 +1591,16 @@ bOP(70Slow, RelativeSlow,  CheckOverflow(), 0, CheckEmulation())
 // BRL
 static void Op82 (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLong(JUMP));
+	u32 adr = ICPU.ShiftedPB + RelativeLong(JUMP);
+	Jump(Registers.PBPC,adr,false,false);
+	S9xSetPCBase(adr);
 }
 
 static void Op82Slow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLongSlow(JUMP));
+	u32 adr = ICPU.ShiftedPB + RelativeLongSlow(JUMP);
+	Jump(Registers.PBPC,adr,false,false);
+	S9xSetPCBase(adr);
 }
 
 /* Flag Instructions ******************************************************* */
@@ -2773,6 +2777,8 @@ void S9xOpcode_IRQ (void)
 	#endif
 #endif
 
+	u32 old = Registers.PBPC;
+
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
 
@@ -2833,6 +2839,8 @@ void S9xOpcode_IRQ (void)
 		}
 	#endif
 	}
+
+	JumpIRQ(old,Registers.PBPC);
 }
 
 /* NMI ********************************************************************* */
@@ -2847,6 +2855,8 @@ void S9xOpcode_NMI (void)
 		S9xTraceMessage("*** NMI");
 	#endif
 #endif
+
+	u32 old = Registers.PBPC;
 
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
@@ -2908,6 +2918,8 @@ void S9xOpcode_NMI (void)
 		}
 	#endif
 	}
+
+	JumpNMI(old,Registers.PBPC);
 }
 
 /* COP ********************************************************************* */
@@ -2955,54 +2967,84 @@ static void Op02 (void)
 
 static void OpDC (void)
 {
-	S9xSetPCBase(AbsoluteIndirectLong(JUMP));
+	u32 adr = AbsoluteIndirectLong(JUMP);
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void OpDCSlow (void)
 {
-	S9xSetPCBase(AbsoluteIndirectLongSlow(JUMP));
+	u32 adr = AbsoluteIndirectLongSlow(JUMP);
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op5C (void)
 {
-	S9xSetPCBase(AbsoluteLong(JUMP));
+	u32 adr = AbsoluteLong(JUMP);
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op5CSlow (void)
 {
-	S9xSetPCBase(AbsoluteLongSlow(JUMP));
+	u32 adr = AbsoluteLongSlow(JUMP);
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 /* JMP ********************************************************************* */
 
 static void Op4C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) Absolute(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) Absolute(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op4CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteSlow(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) AbsoluteSlow(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op6C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndirect(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) AbsoluteIndirect(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op6CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndirectSlow(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) AbsoluteIndirectSlow(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op7C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirect(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirect(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 static void Op7CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirectSlow(JUMP)));
+	u32 adr = ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirectSlow(JUMP));
+	u32 old = Registers.PBPC;
+	S9xSetPCBase(adr);
+	Jump(old,Registers.PBPC,false,false);
 }
 
 /* JSL/RTL ***************************************************************** */
@@ -3012,28 +3054,34 @@ static void Op22E1 (void)
 	// Note: JSL is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
 	uint32	addr = AbsoluteLong(JSR);
+	u32     old  = Registers.PBPC;
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	Registers.SH = 1;
 	S9xSetPCBase(addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op22E0 (void)
 {
 	uint32	addr = AbsoluteLong(JSR);
+	u32     old  = Registers.PBPC;
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op22Slow (void)
 {
 	uint32	addr = AbsoluteLongSlow(JSR);
+	u32     old  = Registers.PBPC;
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	if (CheckEmulation())
 		Registers.SH = 1;
 	S9xSetPCBase(addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op6BE1 (void)
@@ -3041,30 +3089,36 @@ static void Op6BE1 (void)
 	// Note: RTL is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
 	AddCycles(TWO_CYCLES);
+	u32 currAdr = Registers.PBPC;
 	PullW(Registers.PCw);
 	PullB(Registers.PB);
 	Registers.SH = 1;
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC );
 	S9xSetPCBase(Registers.PBPC);
 }
 
 static void Op6BE0 (void)
 {
 	AddCycles(TWO_CYCLES);
+	u32 currAdr = Registers.PBPC;
 	PullW(Registers.PCw);
 	PullB(Registers.PB);
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC);
 	S9xSetPCBase(Registers.PBPC);
 }
 
 static void Op6BSlow (void)
 {
 	AddCycles(TWO_CYCLES);
+	u32 currAdr = Registers.PBPC;
 	PullW(Registers.PCw);
 	PullB(Registers.PB);
 	if (CheckEmulation())
 		Registers.SH = 1;
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC);
 	S9xSetPCBase(Registers.PBPC);
 }
 
@@ -3073,22 +3127,27 @@ static void Op6BSlow (void)
 static void Op20E1 (void)
 {
 	uint16	addr = Absolute(JSR);
+	u32     old  = Registers.PBPC;
 	AddCycles(ONE_CYCLE);
 	PushWE(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op20E0 (void)
 {
 	uint16	addr = Absolute(JSR);
+	u32     old  = Registers.PBPC;
 	AddCycles(ONE_CYCLE);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op20Slow (void)
 {
 	uint16	addr = AbsoluteSlow(JSR);
+	u32     old  = Registers.PBPC;
 
 	AddCycles(ONE_CYCLE);
 
@@ -3102,6 +3161,7 @@ static void Op20Slow (void)
 	}
 
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void OpFCE1 (void)
@@ -3109,42 +3169,52 @@ static void OpFCE1 (void)
 	// Note: JSR (a,X) is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
 	uint16	addr = AbsoluteIndexedIndirect(JSR);
+	u32     old  = Registers.PBPC;
 	PushW(Registers.PCw - 1);
 	Registers.SH = 1;
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void OpFCE0 (void)
 {
 	uint16	addr = AbsoluteIndexedIndirect(JSR);
+	u32     old  = Registers.PBPC;
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void OpFCSlow (void)
 {
 	uint16	addr = AbsoluteIndexedIndirectSlow(JSR);
+	u32     old  = Registers.PBPC;
 	PushW(Registers.PCw - 1);
 	if (CheckEmulation())
 		Registers.SH = 1;
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	Jump(old,Registers.PBPC,false,true);
 }
 
 static void Op60E1 (void)
 {
 	AddCycles(TWO_CYCLES);
+	u32 currAdr = Registers.PBPC;
 	PullWE(Registers.PCw);
 	AddCycles(ONE_CYCLE);
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC);
 	S9xSetPCBase(Registers.PBPC);
 }
 
 static void Op60E0 (void)
 {
 	AddCycles(TWO_CYCLES);
+	u32 currAdr = Registers.PBPC;
 	PullW(Registers.PCw);
 	AddCycles(ONE_CYCLE);
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC);
 	S9xSetPCBase(Registers.PBPC);
 }
 
@@ -3152,6 +3222,7 @@ static void Op60Slow (void)
 {
 	AddCycles(TWO_CYCLES);
 
+	u32 currAdr = Registers.PBPC;
 	if (CheckEmulation())
 	{
 		PullWE(Registers.PCw);
@@ -3163,6 +3234,7 @@ static void Op60Slow (void)
 
 	AddCycles(ONE_CYCLE);
 	Registers.PCw++;
+	JumpRTS(currAdr,Registers.PBPC);
 	S9xSetPCBase(Registers.PBPC);
 }
 
@@ -3435,6 +3507,8 @@ static void Op40Slow (void)
 {
 	AddCycles(TWO_CYCLES);
 
+	u32 old = Registers.PBPC;
+
 	if (!CheckEmulation())
 	{
 		PullB(Registers.PL);
@@ -3457,6 +3531,7 @@ static void Op40Slow (void)
 	}
 
 	S9xSetPCBase(Registers.PBPC);
+	JumpRTI(old,Registers.PBPC);
 
 	if (CheckIndex())
 	{

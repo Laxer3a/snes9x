@@ -281,21 +281,24 @@ static void Op##OP (void) \
 #define mOPM(OP, ADDR, WRAP, FUNC) \
 mOPC(OP, Memory, ADDR, WRAP, FUNC)
 
+ //	Jump(Registers.PC.xPBPC,,false,false);
+
 #define bOP(OP, REL, COND, CHK, E) \
 static void Op##OP (void) \
 { \
 	pair	newPC; \
 	newPC.W = REL(JUMP); \
+	u32 	old = Registers.PBPC;\
 	if (COND) \
 	{ \
 		AddCycles(ONE_CYCLE); \
 		if (E && Registers.PCh != newPC.B.h) \
 			AddCycles(ONE_CYCLE); \
 		if ((Registers.PCw & ~MEMMAP_MASK) != (newPC.W & ~MEMMAP_MASK)) \
-			S9xSetPCBase(ICPU.ShiftedPB + newPC.W); \
+			{ S9xSetPCBase(ICPU.ShiftedPB + newPC.W); Jump(old,Registers.PBPC,true,false); } \
 		else \
-			Registers.PCw = newPC.W; \
-	} \
+			{ Registers.PCw = newPC.W; Jump(old,Registers.PBPC,true,false); } \
+	}  else { Jump(old,old,true,false);  }\
 }
 
 
@@ -313,6 +316,7 @@ static inline void SetZN (uint8 Work8)
 
 static inline void ADC (uint16 Work16)
 {
+	
 	if (CheckDecimal())
 	{
 		uint16	A1 = Registers.A.W & 0x000F;

@@ -542,6 +542,10 @@
     <ClCompile Include="DumpAtEnd.cpp">
       <Filter>GUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\Remotery.c">
+      <Filter>Emu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\execFlow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="rsrc\nodrop.cur">

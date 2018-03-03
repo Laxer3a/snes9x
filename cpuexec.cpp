@@ -189,7 +189,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+ #include "execFlow.h"
 #include "snes9x.h"
 #include "memmap.h"
 #include "cpuops.h"
@@ -307,6 +307,7 @@ void S9xMainLoop (void)
 
 		Registers.PCw++;
 		(*Opcodes[Op].S9xOpcode)();
+		VerifyBlockConnectivity(Registers.PC.xPBPC);
 
 		if (Settings.SA1)
 			S9xSA1MainLoop();
