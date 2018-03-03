@@ -18,10 +18,12 @@ struct DstJump {
 	bool isCond;
 };
 
-void testGraphVizFile();
+void exportGraphVizFile();
+void loadGraph();
+void saveGraph();
 void InitExecFlow	();
 void ResetExecFlow	(u32 src);
-void DumpExecFlow	();
+void PatchBeforeOpcode(u32 src);
 void VerifyBlockConnectivity(u32 src);
 void Jump			(u32 src, u32 dst, bool cond, bool subRoutine);
 void JumpIRQ		(u32 src, u32 dst);

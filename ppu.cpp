@@ -189,7 +189,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+#include "execFlow.h"
 #include "snes9x.h"
 #include "memmap.h"
 #include "dma.h"
@@ -345,6 +345,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	if (CPU.InHDMA)
 		S9xTraceFormattedMessage("--- HDMA PPU %04X -> %02X", Address, Byte);
 #endif
+
+	if (!CPU.InDMAorHDMA) { markUse(Address, 1); }
 
 	if (Settings.MSU1 && (Address & 0xfff8) == 0x2000) // MSU-1
 		S9xMSU1WritePort(Address & 7, Byte);
@@ -1129,9 +1131,11 @@ uint8 S9xGetPPU (uint16 Address)
 		}
 	}
 
+	if (!CPU.InDMAorHDMA) { markUse(Address, 0); }
+
 	if ((Address & 0xffc0) == 0x2140) // APUIO0, APUIO1, APUIO2, APUIO3
 		// read_port will run the APU until given APU time before reading value
-		return (S9xAPUReadPort(Address & 3));
+			return (S9xAPUReadPort(Address & 3));
 	else
 	if (Address <= 0x2183)
     {
@@ -1364,6 +1368,8 @@ uint8 S9xGetPPU (uint16 Address)
 
 void S9xSetCPU (uint8 Byte, uint16 Address)
 {
+	if (!CPU.InDMAorHDMA) { markUse(Address, 1); }
+
 	if (Address < 0x4200)
 	{
 		switch (Address)
@@ -1604,6 +1610,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 			case 0x420b: // MDMAEN
 				if (CPU.InDMAorHDMA)
 					return;
+
+//				markUse(DMA_MRK, 1);
+
 				// XXX: Not quite right...
                 if (Byte) {
                     CPU.PrevCycles = CPU.Cycles;
@@ -1635,6 +1644,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 			case 0x420c: // HDMAEN
 				if (CPU.InDMAorHDMA)
 					return;
+
+//				markUse(DMA_MRK, 1);
+
 				Memory.FillRAM[0x420c] = Byte;
 				// Yoshi's Island, Genjyu Ryodan, Mortal Kombat, Tales of Phantasia
 				PPU.HDMA = Byte & ~PPU.HDMAEnded;
@@ -1693,6 +1705,8 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 uint8 S9xGetCPU (uint16 Address)
 {
+	if (!CPU.InDMAorHDMA) { markUse(Address, 0); }
+
 	if (Address < 0x4200)
 	{
 	#ifdef SNES_JOY_READ_CALLBACKS

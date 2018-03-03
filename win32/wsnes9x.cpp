@@ -213,6 +213,7 @@
 #include <Shobjidl.h>
 #include <dbt.h>
 
+#include "execFlow.h"
 #include "wsnes9x.h"
 #include "win32_sound.h"
 #include "win32_display.h"
@@ -1680,6 +1681,19 @@ LRESULT CALLBACK WinProc(
 				}
 				RestoreSNESDisplay ();// re-enter after dialog
 			}
+			break;
+		case ID_GRAPH_LOAD:
+			loadGraph();
+			break;
+		case ID_GRAPH_SAVE:
+			saveGraph();
+			break;
+		case ID_GRAPH_EXPORT:
+			exportGraphVizFile();
+			break;
+		case ID_GRAPH_NEXTPASS:
+			break;
+		case ID_GRAPH_ENDPASS:
 			break;
 		case ID_FILE_STOP_AVI:
 			DoAVIClose(0);

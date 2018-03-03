@@ -189,7 +189,8 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
- #include "execFlow.h"
+#include "execFlow.h"
+
 #include "snes9x.h"
 #include "memmap.h"
 #include "cpuops.h"
@@ -303,7 +304,9 @@ void S9xMainLoop (void)
 			CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16) (Registers.PCw + 4)));
 			if (oldPCBase != CPU.PCBase || (Registers.PCw & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
 				Opcodes = S9xOpcodesSlow;
-		}
+		};
+
+		PatchBeforeOpcode(Registers.PC.xPBPC);
 
 		Registers.PCw++;
 		(*Opcodes[Op].S9xOpcode)();

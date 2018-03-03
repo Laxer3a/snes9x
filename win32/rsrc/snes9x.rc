@@ -859,6 +859,12 @@ BEGIN
             MENUITEM "Save Memory Pack",            ID_SAVEMEMPACK
         END
         MENUITEM "ROM Information...",          IDM_ROM_INFO
+		MENUITEM SEPARATOR
+		MENUITEM "Load Graph",					 	ID_GRAPH_LOAD
+		MENUITEM "Save Graph",						ID_GRAPH_SAVE
+		MENUITEM "Export Graph",					ID_GRAPH_EXPORT
+		MENUITEM "Next Pass",						ID_GRAPH_NEXTPASS
+		MENUITEM "End Pass",						ID_GRAPH_ENDPASS
         MENUITEM SEPARATOR
         MENUITEM "Movie Play...",               ID_FILE_MOVIE_PLAY
         MENUITEM "Movie Record...",             ID_FILE_MOVIE_RECORD

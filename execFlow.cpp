@@ -271,6 +271,7 @@ struct Block {
 };
 
 struct Link {
+	Link* next;
 	u32 blockSrc;
 	u32 blockDst;	// Dst ALWAYS start of block.
 	u32 mode;
@@ -292,10 +293,13 @@ static const int TABLE_SIZE = 16*1024*1024;
 
 Block*	gCurrBlock;
 Block*	gExecuted[TABLE_SIZE];	// 64 / 128 MB.
-Block   gBlocks[TABLE_SIZE];	// For now a lot too much. 1/10 should be enough.
-u32     gBlockCount;
 
+
+Block   gBlocks[TABLE_SIZE];	// For now a lot too much. 1/10 should be enough.
 Link    gLinks[TABLE_SIZE];		// Same Here...
+Link*	gLinksFrom[TABLE_SIZE];		// Same here...
+
+u32     gBlockCount;
 u32     gLinkCount;
 bool	gInit = false;
 
@@ -324,30 +328,29 @@ int findBlock(u32 adr) {
 	return -1;
 }
 
-Link* allocLink() {
-	gLinks[gLinkCount].mode = 0;
-	return &gLinks[gLinkCount++];
+Link* allocLink(u32 from) {
+	Link* pl = &gLinks[gLinkCount++];
+	pl->mode = 0;
+	pl->next = gLinksFrom[from];
+	gLinksFrom[from] = pl;
+	return pl;
 }
 
-void ERRORFLOW() {
+void ERRORFLOW(const char* msg) {
+	// testGraphVizFile(); // Dump on error.
+	printf(msg);
 	while (1) {
-		printf("Hello World");
 	}
 }
 
 void InitExecFlow	() {
-	/*
-	gDstJumpsCount = 0;
-	for (int n=0; n < TABLE_SIZE; n++) {
-	gDstJumps[n]=0;
-		gSrcJumps[n]=false;
-	}
-	gCurrDestJump = 0;
-	*/
-
 	// Use to transform search from O(n) -> O(1)
 	for (int n=0; n < TABLE_SIZE; n++) {
 		gExecuted[n] = NULL;
+	}
+
+	for (int n=0; n < TABLE_SIZE; n++) {
+		gLinksFrom[n] = NULL;
 	}
 
 	gBlockCount = 0;
@@ -383,34 +386,41 @@ void ResetExecFlow	(u32 adr) {
 	}
 }
 
-void DumpExecFlow	() {
+void PatchBeforeOpcode(u32 src) {
+	if (gExecuted[src]==NULL) {
+		gExecuted[src] = gCurrBlock;
+	} else if (gExecuted[src]!=gCurrBlock) {
+		ERRORFLOW("WALK TWICE SAME OPCODE BUT DIFFERENT BLOCK !");
+	}
 }
 
 bool existLink(u32 from, u32 to) {
-	for (int n=0; n < gLinkCount; n++) {
-		Link* pLnk = &gLinks[n];
-		if ((pLnk->blockSrc == from) && (pLnk->blockDst == to)) { return true; }
+	Link* pLink = gLinksFrom[from];
+	while (pLink) {
+		if (pLink->blockDst == to) {
+			return true;
+		}
+		pLink = pLink->next;
 	}
+
 	return false;
 }
 
 void VerifyBlockConnectivity(u32 codePos) {
-	for (int n=2; n < gBlockCount; n++) {
-		if (&gBlocks[n] != gCurrBlock) {
-			if (codePos == gBlocks[n].start) {
-				// Link block
-				if (!existLink(gCurrBlock->selfID,n)) {
-					Link* newLink = allocLink();
-					newLink->blockSrc	= gCurrBlock->selfID;
-					newLink->blockDst	= n;
-				}
-				gCurrBlock = &gBlocks[n];
-				break;
-			} else if (codePos > gBlocks[n].start && codePos < gBlocks[n].end) {
-				ERRORFLOW();
+	Block* pBlk = gExecuted[codePos];
+	if ((gCurrBlock != pBlk) && (pBlk != NULL)) {
+		// Move to another known block without jumps...
+		if (codePos == pBlk->start) {
+			if (!existLink(gCurrBlock->selfID,pBlk->selfID)) {	// TODO : for now costly lookup...
+				Link* newLink = allocLink(gCurrBlock->selfID);
+				newLink->blockSrc	= gCurrBlock->selfID;
+				newLink->blockDst	= pBlk->selfID;
 			}
+			gCurrBlock = pBlk;
+		} else {
+			ERRORFLOW("CHANGE BLOCK WITHOUT JUMP BUT NOT AT BLOCK BEGINNING ?");
 		}
-	}
+	} // else already walking the same block again, or unknown area...
 }
 
 int jmpCount = 0;
@@ -421,7 +431,7 @@ void Block::updateEnd(u32 adr) {
 	}
 
 	if (this->end < this->start) {
-		ERRORFLOW();
+		ERRORFLOW("BLOCK END BEFORE BLOCK START !!!");
 	}
 }
 
@@ -498,20 +508,25 @@ void Jump			(u32 src, u32 dst, bool cond, bool subRoutine) {
 			}
 
 			// Add link between splitted block.
-			Link* newLink = allocLink();
+			Link* newLink = allocLink(pBlk->selfID);
 			newLink->blockSrc	= pBlk->selfID;
 			newLink->blockDst	= splitPost->selfID;
 			newLink->mode		= 4;
 
 			// Add link for the jump itself.
-			jumpLink = allocLink();
+			jumpLink = allocLink(gCurrBlock->selfID);
 			jumpLink->blockSrc	= gCurrBlock->selfID;
 			jumpLink->blockDst  = blockFound;
 
+			for (int n=splitPost->start; n <= splitPost->end; n++) {
+				if (gExecuted[n]) {
+					gExecuted[n] = splitPost;
+				}
+			} 
 			change = true;
 		} else {
 			if (!existLink(gCurrBlock->selfID, pBlk->selfID)) {
-				jumpLink = allocLink();
+				jumpLink = allocLink(gCurrBlock->selfID);
 				jumpLink->blockSrc	= gCurrBlock->selfID;
 				jumpLink->blockDst  = pBlk->selfID;
 				change = true;
@@ -522,7 +537,7 @@ void Jump			(u32 src, u32 dst, bool cond, bool subRoutine) {
 		// Jump to new block.
 		u32 oldBlock = gCurrBlock->selfID;
 		blockFound = allocBlockAdr(dst);
-		jumpLink = allocLink();
+		jumpLink = allocLink(oldBlock);
 		jumpLink->blockSrc	= oldBlock;
 		jumpLink->blockDst  = blockFound;
 		change = true;
@@ -533,7 +548,7 @@ void Jump			(u32 src, u32 dst, bool cond, bool subRoutine) {
 	}
 	
 	jmpCount++;
-	if (change) { testGraphVizFile(); }
+//	if (change) { testGraphVizFile(); }
 }
 
 // TODO : Cartridge boot strap (gCurrDestJump setup)
@@ -616,31 +631,81 @@ void writeVizgraph(FILE* f) {
 		}
 	}
 
-	/*
-	bool empty = true;
-	u32 dst = 0;
-	for (int n=0; n < TABLE_SIZE; n++) {
-		if (empty == true) {
-			DstJump* parse = gDstJumps[n];
-			if (parse) {
-				dst = n;
-				empty = false;
-			}
-		} else {
-			if (gSrcJumps[n]) {
-				fprintf(f, "\tAdr%x -> Adr%x;\n",n, dst);
-				empty = false;
-			}
-		}
-	}
-	*/
-
 	fprintf(f, "}\n");
 }
 
-void testGraphVizFile() {
-	FILE* f = fopen("C:\\GraphViz\\testGraphViz.dot","w");
+void exportGraphVizFile() {
+	FILE* f = fopen("graph_log_snes9x.dot","w");
 	writeVizgraph(f);
+	fclose(f);
+}
+
+void loadGraph() {
+	InitExecFlow();
+
+	FILE* f;
+	f = fopen("graph_log_snes9x.bin","rb");
+
+	fread(&gBlockCount,sizeof(u32),1,f);
+	fread(&gLinkCount ,sizeof(u32),1,f);
+
+	fread(gLinks,sizeof(Link),gLinkCount,f);
+	for (int n=0; n < gLinkCount; n++) {
+		gLinks[n].next = NULL;
+	}
+
+	fread(gBlocks, sizeof(Block), gBlockCount, f);
+
+	int readCount;
+	fread(&readCount, sizeof(u32),1,f);
+	for (int n=0; n < readCount; n++) {
+		u32 adr;
+		u32 idx; 
+		fread(&adr, sizeof(u32), 1,f);
+		fread(&idx, sizeof(u32), 1,f);
+		gExecuted[adr] = &gBlocks[idx];
+	}
+
+	// Create Link list...
+	for (int n=0; n < gLinkCount; n++) {
+		gLinks[n].next = gLinksFrom[gLinks[n].blockSrc];
+		gLinksFrom[gLinks[n].blockSrc] = &gLinks[n];
+	}
+
+	fclose(f);
+}
+
+void saveGraph() {
+	FILE* f;
+	f = fopen("graph_log_snes9x.bin","wb");
+
+	// 0. Block Count + Link Count
+	fwrite(&gBlockCount,sizeof(u32),1,f);
+	fwrite(&gLinkCount, sizeof(u32),1,f);
+
+	// 1. Save link file (src,dst,mode), NOT NEXT.
+	fwrite(gLinks,sizeof(Link),gLinkCount,f);
+
+	// 3. Save blocks as is
+	fwrite(gBlocks,sizeof(Block),gBlockCount,f);
+
+	// 4. Save gExecuted using integer instead of pointers.
+	
+	// 4.1 Count
+	u32 counter = 0;
+	for (int n=0; n < TABLE_SIZE; n++) {
+		if (gExecuted[n]) { counter++; }
+	}
+	fwrite(&counter, sizeof(u32),1,f);
+
+	// 4.2 Array
+	for (int n=0; n < TABLE_SIZE; n++) {
+		if (gExecuted[n]) {
+			fwrite(&n, sizeof(u32),1,f);						// Adr
+			fwrite(&gExecuted[n]->selfID, sizeof(u32),1,f);		// Ptr
+		}
+	}
+
 	fclose(f);
 }
 

@@ -189,6 +189,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
+#include "execFlow.h"
 
 #include "snes9x.h"
 #include "memmap.h"
@@ -315,6 +316,8 @@ void S9xReset (void)
 		S9xResetSRTC();
 	if (Settings.MSU1)
 		S9xMSU1Init();
+
+	ResetExecFlow	(Registers.PC.xPBPC);
 
 	S9xInitCheatData();
 }

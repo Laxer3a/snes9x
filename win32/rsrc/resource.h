@@ -504,6 +504,12 @@
 #define ID_SAVEMEMPACK                  40175
 #define ID_FILE_SAVE_FILE               40176
 #define ID_FILE_LOAD_FILE               40177
+#define ID_GRAPH_LOAD					40178
+#define ID_GRAPH_SAVE					40179
+#define ID_GRAPH_EXPORT					40180
+#define ID_GRAPH_NEXTPASS				40181
+#define ID_GRAPH_ENDPASS				40182
+
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
